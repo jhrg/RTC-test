@@ -6,14 +6,14 @@
 
 #include <Arduino.h>
 #include <PinChangeInterrupt.h>
-#include <RTClib.h>  // https://github.com/adafruit/RTClib
+#include <RTClib.h> // https://github.com/adafruit/RTClib
 
 #include "print.h"
 
-#define BAUD_RATE 115200         // old: 9600
-#define CLOCK_QUERY_INTERVAL 12  // seconds
+#define BAUD_RATE 115200        // old: 9600
+#define CLOCK_QUERY_INTERVAL 12 // seconds
 
-#define CLOCK_1HZ 2  // D2
+#define CLOCK_1HZ 2 // D2
 
 #if USE_DS3231
 RTC_DS3231 rtc;
@@ -98,11 +98,11 @@ void timer_1HZ_tick_ISR() {
         // update time using I2C access to the clock
         tick_count = 0;
         get_time = true;
+    } else {
+        // when get_time is false, main_mode_handler() adds one second to the global
+        // time (dt) when update_display is true.
+        update_display = true;
     }
-
-    // when get_time is false, main_mode_handler() adds one second to the global
-    // time (dt) when update_display is true.
-    update_display = true;
 }
 
 void setup() {
@@ -154,7 +154,7 @@ void setup() {
     dt = rtc.now();
     print_time(dt, true);
 
-    cli();  // stop interrupts
+    cli(); // stop interrupts
 
     // This is used for the 1Hz pulse from the clock that triggers
     // time updates.
@@ -163,20 +163,20 @@ void setup() {
     // time_1Hz_tick() sets a flag that is tested in loop()
     attachInterrupt(digitalPinToInterrupt(CLOCK_1HZ), timer_1HZ_tick_ISR, RISING);
 
-    sei();  // start interrupts
+    sei(); // start interrupts
 }
 
 void main_mode_handler() {
-    static TimeSpan ts(1);  // a one-second time span
+    static TimeSpan ts(1); // a one-second time span
 
     if (get_time) {
         DPRINT("Get time\n");
         get_time = false;
-        dt = rtc.now();  // This call takes about 1ms
+        dt = rtc.now(); // This call takes about 1ms
         print_time(dt, true);
     } else if (update_display) {
         update_display = false;
-        dt = dt + ts;  // Advance 'dt' by one second
+        dt = dt + ts; // Advance 'dt' by one second
         print_time(dt, true);
     }
 }
@@ -185,6 +185,6 @@ void loop() {
     // put your main code here, to run repeatedly:
     delay(50);
     main_mode_handler();
-    //dt = rtc.now();  // This call takes about 1ms
-    // print_time(dt, true);
+    // dt = rtc.now();  // This call takes about 1ms
+    //  print_time(dt, true);
 }
